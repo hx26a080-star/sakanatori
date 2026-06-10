@@ -1,0 +1,6 @@
+{
+  "name": "魚捕りアクションゲーム",
+  "description": "横から泳いでくる魚を網（クリック）で捕まえてスコアを競う、爽快なタップ/クリックアクションゲームです。様々な魚、スピード、特殊効果を持つ魚、お邪魔キャラクターが出現します。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

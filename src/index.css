@@ -1,0 +1,76 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+/* Custom Seaweed Swaying Animation */
+@keyframes sway {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(6deg) skewX(3deg);
+  }
+}
+
+/* Custom Rising Bubbles Animation */
+@keyframes bubble {
+  0% {
+    transform: translateY(100px) translateX(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.6;
+  }
+  90% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(-110vh) translateX(30px);
+    opacity: 0;
+  }
+}
+
+/* Tail wiggle for swimming realistic effect */
+@keyframes swimWiggle {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(12deg);
+  }
+}
+
+/* Gentle water ripple background pulse */
+@keyframes ripple {
+  0% {
+    box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.2), 0 0 0 10px rgba(56, 189, 248, 0.2);
+  }
+  100% {
+    box-shadow: 0 0 0 15px rgba(56, 189, 248, 0), 0 0 0 30px rgba(56, 189, 248, 0);
+  }
+}
+
+.animate-sway {
+  animation: sway 5s ease-in-out infinite;
+}
+
+.animate-bubble {
+  animation: bubble 10s linear infinite;
+}
+
+.animate-swim-wiggle {
+  animation: swimWiggle 0.4s ease-in-out infinite;
+}
+
+.animate-ripple {
+  animation: ripple 2s infinite linear;
+}
+
+/* Custom Hide Cursor when in play arena */
+.game-arena-cursor {
+  cursor: none;
+}
+
