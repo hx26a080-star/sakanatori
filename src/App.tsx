@@ -185,7 +185,7 @@ export default function App() {
                 <div className="flex items-center gap-2 bg-slate-800/40 p-1.5 rounded-xl border border-white/5">
                   <span className="text-xl">🦈</span>
                   <div>
-                    <p className="font-extrabold text-blue-400">激闘サメ (+50)</p>
+                    <p className="font-extrabold text-[#5059ff] no-underline">激闘サメ (+50)</p>
                     <p className="text-[10px] text-slate-500">体力が高い！ 3回連続クリック！</p>
                   </div>
                 </div>
