@@ -22,6 +22,7 @@ const createEmptyStats = (high: number): GameStats => ({
   maxCombo: 0,
   pufferExplodes: 0,
   jellyShocks: 0,
+  missCount: 0,
 });
 
 export const Playground: React.FC<PlaygroundProps> = ({ difficulty, timeLimit, onGameOver, onExit }) => {
@@ -50,6 +51,19 @@ export const Playground: React.FC<PlaygroundProps> = ({ difficulty, timeLimit, o
 
   // Screen shake effect for puffer explosion
   const [shakeScreen, setShakeScreen] = useState<boolean>(false);
+
+  // Statistics for badges system
+  const [caughtCount, setCaughtCount] = useState<Record<FishType, number>>({
+    normal: 0,
+    fast: 0,
+    big: 0,
+    golden: 0,
+    puffer: 0,
+    jelly: 0,
+  });
+  const [pufferExplodes, setPufferExplodes] = useState<number>(0);
+  const [jellyShocks, setJellyShocks] = useState<number>(0);
+  const [missCount, setMissCount] = useState<number>(0);
 
   const arenaRef = useRef<HTMLDivElement>(null);
   const nextFishIdRef = useRef<number>(1);
@@ -179,6 +193,7 @@ export const Playground: React.FC<PlaygroundProps> = ({ difficulty, timeLimit, o
               triggerCaughtEffect(fish.x, fish.y, -25, '💥', '爆発！減点');
               setScore((prev) => Math.max(0, prev - 25));
               resetCombo();
+              setPufferExplodes((prev) => prev + 1);
               
               // Increment puffer explosion statistics
               try {
@@ -195,6 +210,7 @@ export const Playground: React.FC<PlaygroundProps> = ({ difficulty, timeLimit, o
             sound.playShock();
             setIsShocked(true);
             setShockTimeRemaining(1.5); // Net frozen for 1.5s
+            setJellyShocks((prev) => prev + 1);
             triggerCaughtEffect(fish.x, fish.y, -15, '⚡', 'しびれた！');
             setScore((prev) => Math.max(0, prev - 15));
             resetCombo();
@@ -211,6 +227,11 @@ export const Playground: React.FC<PlaygroundProps> = ({ difficulty, timeLimit, o
             } else {
               sound.playCatch();
             }
+
+            setCaughtCount((prev) => ({
+              ...prev,
+              [fish.type]: prev[fish.type] + 1,
+            }));
 
             // Calculate combo bonuses
             const comboMultiplier = 1 + Math.floor(combo / 5) * 0.1; // +10% score bonus every 5 combo
@@ -245,6 +266,7 @@ export const Playground: React.FC<PlaygroundProps> = ({ difficulty, timeLimit, o
       // If clicked but missed all fish, reset combo (makes the game challenging!)
       if (!isAnyFishHit) {
         resetCombo();
+        setMissCount((prev) => prev + 1);
       }
 
       return nextList;
@@ -511,14 +533,16 @@ export const Playground: React.FC<PlaygroundProps> = ({ difficulty, timeLimit, o
     }
 
     // Format final results object
+    const totalCaughtCount = (Object.values(caughtCount) as number[]).reduce((a: number, b: number) => a + b, 0);
     const finalStats: GameStats = {
       score,
       highScore: Math.max(score, highest),
-      caughtCount: { normal: 0, fast: 0, big: 0, golden: 0, puffer: 0, jelly: 0 }, // optional detailed report
-      totalCaught: 0,
+      caughtCount,
+      totalCaught: totalCaughtCount,
       maxCombo: peakCombo,
-      pufferExplodes: 0,
-      jellyShocks: 0,
+      pufferExplodes,
+      jellyShocks,
+      missCount,
     };
 
     onGameOver(finalStats);

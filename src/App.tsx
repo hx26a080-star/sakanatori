@@ -50,41 +50,7 @@ export default function App() {
   };
 
   const handleGameOver = (finalStats: GameStats) => {
-    // Lazy pull stats from localStorage counters to get precise breakdown info
-    try {
-      const normalCount = parseInt(localStorage.getItem('fish_game_count_normal') || '0', 10);
-      const fastCount = parseInt(localStorage.getItem('fish_game_count_fast') || '0', 10);
-      const bigCount = parseInt(localStorage.getItem('fish_game_count_big') || '0', 10);
-      const goldenCount = parseInt(localStorage.getItem('fish_game_count_golden') || '0', 10);
-      const pufferExp = parseInt(localStorage.getItem('fish_game_stats_puffer') || '0', 10);
-
-      // Clean local incremental counters for next round
-      localStorage.setItem('fish_game_count_normal', '0');
-      localStorage.setItem('fish_game_count_fast', '0');
-      localStorage.setItem('fish_game_count_big', '0');
-      localStorage.setItem('fish_game_count_golden', '0');
-      localStorage.setItem('fish_game_stats_puffer', '0');
-
-      const total = normalCount + fastCount + bigCount + goldenCount;
-
-      const enrichedStats: GameStats = {
-        ...finalStats,
-        caughtCount: {
-          normal: normalCount,
-          fast: fastCount,
-          big: bigCount,
-          golden: goldenCount,
-          puffer: pufferExp,
-          jelly: 0, // transient
-        },
-        totalCaught: total,
-        pufferExplodes: pufferExp,
-      };
-
-      setGameStats(enrichedStats);
-    } catch (_) {
-      setGameStats(finalStats);
-    }
+    setGameStats(finalStats);
     setGameState('gameover');
   };
 

@@ -49,6 +49,16 @@ export interface GameStats {
   maxCombo: number;
   pufferExplodes: number;
   jellyShocks: number;
+  missCount: number;
+}
+
+export interface Badge {
+  id: string;
+  name: string;
+  description: string;
+  emoji: string;
+  color: string; // Tailwind class
+  requirement: string;
 }
 
 export type Difficulty = 'easy' | 'normal' | 'hard';

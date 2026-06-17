@@ -1,6 +1,7 @@
 import React from 'react';
-import { GameStats, Difficulty } from '../types';
-import { RotateCcw, Award, Star, TrendingUp, Trophy, HelpCircle, Activity } from 'lucide-react';
+import { GameStats, Difficulty, Badge } from '../types';
+import { RotateCcw, Award, Star, Trophy, Activity, MessageSquare } from 'lucide-react';
+import { sound } from '../utils/audio';
 
 interface GameStatsBoxProps {
   stats: GameStats;
@@ -9,8 +10,96 @@ interface GameStatsBoxProps {
   onRestart: () => void;
 }
 
+export const BADGES: Badge[] = [
+  {
+    id: 'no_miss',
+    name: '百発百中 (Perfect Aim)',
+    description: '空振りを1回もせずにゲームを終了する',
+    emoji: '🎯',
+    color: 'from-emerald-400 to-teal-600',
+    requirement: 'ミス（空振り）0回 ＆ 漁獲量 5匹以上',
+  },
+  {
+    id: 'golden_expert',
+    name: '黄金の探究者 (Golden Expert)',
+    description: '黄金のレア魚（黄金ウオ）を捕獲する',
+    emoji: '✨',
+    color: 'from-yellow-400 to-amber-600',
+    requirement: '黄金ウオを 1 匹以上捕獲',
+  },
+  {
+    id: 'combo_king',
+    name: '怒涛の連鎖 (Combo King)',
+    description: '高いコンボ数を叩き出す',
+    emoji: '⚡',
+    color: 'from-cyan-400 via-blue-500 to-indigo-600',
+    requirement: '最大コンボ 10 以上',
+  },
+  {
+    id: 'shark_slayer',
+    name: 'ジョーズ・ハンター (Shark Hunter)',
+    description: '巨大なサメを捕獲する',
+    emoji: '🦈',
+    color: 'from-blue-600 to-slate-800',
+    requirement: 'ホホジロサメを 1 匹以上捕獲',
+  },
+  {
+    id: 'zen_master',
+    name: '静寂の海 (Zen Fisherman)',
+    description: 'ハザードに触れず、一定以上の魚を捕獲する',
+    emoji: '🧘',
+    color: 'from-purple-500 to-pink-600',
+    requirement: '爆発・感電いずれも 0 回 ＆ 漁獲量 10 匹以上',
+  }
+];
+
 export const GameStatsBox: React.FC<GameStatsBoxProps> = ({ stats, difficulty, timeLimit, onRestart }) => {
-  const { score, highScore, caughtCount, totalCaught, maxCombo, pufferExplodes, jellyShocks } = stats;
+  const { score, highScore, caughtCount, totalCaught, maxCombo, pufferExplodes, jellyShocks, missCount } = stats;
+
+  const [newlyUnlocked, setNewlyUnlocked] = React.useState<string[]>([]);
+  const [allUnlocked, setAllUnlocked] = React.useState<string[]>([]);
+
+  React.useEffect(() => {
+    try {
+      // 1. Load unlocked badges from previous sessions
+      const stored = localStorage.getItem('fish_game_unlocked_badges');
+      let unlockedList: string[] = stored ? JSON.parse(stored) : [];
+      if (!Array.isArray(unlockedList)) unlockedList = [];
+
+      // 2. Compute unlocks from this run
+      const newlyUnlockedThisRun: string[] = [];
+      
+      const meetsNoMiss = (missCount === 0 || (stats as any).misses === 0) && totalCaught >= 5;
+      const meetsGolden = (caughtCount.golden || 0) >= 1;
+      const meetsCombo = maxCombo >= 10;
+      const meetsShark = (caughtCount.big || 0) >= 1;
+      const meetsZen = pufferExplodes === 0 && jellyShocks === 0 && totalCaught >= 10;
+
+      if (meetsNoMiss && !unlockedList.includes('no_miss')) newlyUnlockedThisRun.push('no_miss');
+      if (meetsGolden && !unlockedList.includes('golden_expert')) newlyUnlockedThisRun.push('golden_expert');
+      if (meetsCombo && !unlockedList.includes('combo_king')) newlyUnlockedThisRun.push('combo_king');
+      if (meetsShark && !unlockedList.includes('shark_slayer')) newlyUnlockedThisRun.push('shark_slayer');
+      if (meetsZen && !unlockedList.includes('zen_master')) newlyUnlockedThisRun.push('zen_master');
+
+      if (newlyUnlockedThisRun.length > 0) {
+        const nextUnlockedList = [...unlockedList, ...newlyUnlockedThisRun];
+        localStorage.setItem('fish_game_unlocked_badges', JSON.stringify(nextUnlockedList));
+        setNewlyUnlocked(newlyUnlockedThisRun);
+        setAllUnlocked(nextUnlockedList);
+        
+        // Play badge unlock chime sound
+        setTimeout(() => {
+          try {
+            sound.playRareCatch(); 
+          } catch (_) {}
+        }, 300);
+      } else {
+        setAllUnlocked(unlockedList);
+      }
+    } catch (e) {
+      console.error('Error in badge unlocking logic', e);
+    }
+  }, [stats, missCount, totalCaught, caughtCount, maxCombo, pufferExplodes, jellyShocks]);
 
   // Custom feedback/ranking based on high score
   const rankInfo = React.useMemo(() => {
@@ -48,6 +137,21 @@ export const GameStatsBox: React.FC<GameStatsBoxProps> = ({ stats, difficulty, t
         </p>
       </div>
 
+      {/* Newly Unlocked Badge Popup banner */}
+      {newlyUnlocked.length > 0 && (
+        <div className="mb-6 p-4 bg-gradient-to-r from-yellow-500/10 via-amber-500/20 to-yellow-500/10 border border-yellow-500/40 rounded-2xl animate-pulse flex items-center gap-3">
+          <div className="p-2.5 bg-yellow-500/20 rounded-full text-yellow-400">
+            <Star size={20} />
+          </div>
+          <div className="flex-1 text-left">
+            <p className="text-xs font-black text-yellow-400 tracking-wider">実績を解除しました！ (Badge Unlocked)</p>
+            <p className="text-xs text-slate-200 mt-0.5 font-bold">
+              {newlyUnlocked.map(id => BADGES.find(b => b.id === id)?.name).join(', ')}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Main Score & High Score */}
       <div className="grid grid-cols-2 gap-4 mb-6">
         <div className="bg-slate-800/40 border border-white/5 rounded-2xl p-4 text-center">
@@ -80,6 +184,57 @@ export const GameStatsBox: React.FC<GameStatsBoxProps> = ({ stats, difficulty, t
         </p>
       </div>
 
+      {/* Milestone Badges System Grid */}
+      <div className="bg-slate-800/40 rounded-2xl border border-white/5 p-4 mb-6">
+        <h4 className="text-xs uppercase font-bold text-slate-400 tracking-widest mb-3 flex items-center gap-1.5 border-b border-white/5 pb-2">
+          <Award size={12} className="text-yellow-400" />
+          獲得した実績 (Milestone Badges)
+        </h4>
+        <div className="grid grid-cols-5 gap-2">
+          {BADGES.map((badge) => {
+            const isUnlocked = allUnlocked.includes(badge.id);
+            const isNew = newlyUnlocked.includes(badge.id);
+            
+            return (
+              <div 
+                key={badge.id}
+                className={`flex flex-col items-center p-2 rounded-xl text-center relative transition group cursor-pointer ${
+                  isUnlocked 
+                    ? 'bg-slate-800/80 border border-white/10 shadow-lg' 
+                    : 'bg-slate-950/40 border border-white/5 opacity-40'
+                }`}
+                id={`badge-card-${badge.id}`}
+              >
+                {isNew && (
+                  <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-pink-500"></span>
+                  </span>
+                )}
+                <div className={`w-9 h-9 md:w-11 md:h-11 rounded-full bg-gradient-to-br ${isUnlocked ? badge.color : 'from-slate-800 to-slate-900'} flex items-center justify-center text-base md:text-lg shadow shadow-black/40 mb-1 group-hover:scale-105 transition`}>
+                  {isUnlocked ? badge.emoji : '🔒'}
+                </div>
+                <span className="text-[8px] md:text-[9px] font-bold text-slate-400 truncate w-full">
+                  {badge.name.split(' ')[0]}
+                </span>
+                
+                {/* Custom hover tooltip popover */}
+                <div className="absolute bottom-14 left-1/2 -translate-x-1/2 w-48 bg-slate-950/95 border border-white/10 rounded-lg p-2.5 opacity-0 scale-95 pointer-events-none group-hover:opacity-100 group-hover:scale-100 transition-all duration-150 z-30 shadow-2xl text-left">
+                  <p className="font-extrabold text-xs text-yellow-400 flex items-center gap-1.5">
+                    <span>{badge.emoji}</span> {badge.name}
+                  </p>
+                  <p className="text-[10px] text-white/90 mt-1 leading-relaxed">{badge.description}</p>
+                  <p className="text-[9px] text-[#5059ff] mt-1 italic font-mono">クリア条件: {badge.requirement}</p>
+                  <p className={`text-[9px] mt-1.5 text-right font-bold ${isUnlocked ? 'text-emerald-400' : 'text-slate-500'}`}>
+                    {isUnlocked ? '✓ 獲得済み (Unlocked)' : '未獲得 (Locked)'}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Detailed stats grids */}
       <div className="bg-slate-800/40 rounded-2xl border border-white/5 p-4 mb-6">
         <h4 className="text-xs uppercase font-bold text-slate-400 tracking-widest mb-3 flex items-center gap-1.5 border-b border-white/5 pb-2">
@@ -95,10 +250,10 @@ export const GameStatsBox: React.FC<GameStatsBoxProps> = ({ stats, difficulty, t
             <span className="text-slate-500 block mb-0.5">最大コンボ</span>
             <span className="font-bold text-teal-400 text-sm">{maxCombo} Combo</span>
           </div>
-          <div className="p-2 bg-slate-900/40 rounded-xl">
-            <span className="text-slate-500 block mb-0.5">ハザード被害</span>
+          <div className="p-2 bg-slate-900/40 rounded-xl" title={`ミス: ${missCount}回`}>
+            <span className="text-slate-500 block mb-0.5">ハザード/ミス</span>
             <span className="font-bold text-rose-400 text-sm">
-              {pufferExplodes + jellyShocks} 回
+              {pufferExplodes + jellyShocks}/{missCount}
             </span>
           </div>
         </div>
